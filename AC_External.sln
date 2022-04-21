@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AC_External", "AC_External\AC_External.vcxproj", "{AFF9C9FE-4571-48ED-9E57-BD62205CED6C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F2D5CB77-0271-4793-B37E-437509979C0F}"
+	ProjectSection(SolutionItems) = preProject
+		AC_External\color.hpp = AC_External\color.hpp
+		AC_External\hello.cpp = AC_External\hello.cpp
+		AC_External\how.cpp = AC_External\how.cpp
+		AC_External\hue.cpp = AC_External\hue.cpp
+		AC_External\mark.cpp = AC_External\mark.cpp
+		AC_External\why.cpp = AC_External\why.cpp
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AFF9C9FE-4571-48ED-9E57-BD62205CED6C}.Debug|x64.ActiveCfg = Debug|x64
+		{AFF9C9FE-4571-48ED-9E57-BD62205CED6C}.Debug|x64.Build.0 = Debug|x64
+		{AFF9C9FE-4571-48ED-9E57-BD62205CED6C}.Debug|x86.ActiveCfg = Debug|Win32
+		{AFF9C9FE-4571-48ED-9E57-BD62205CED6C}.Debug|x86.Build.0 = Debug|Win32
+		{AFF9C9FE-4571-48ED-9E57-BD62205CED6C}.Release|x64.ActiveCfg = Release|x64
+		{AFF9C9FE-4571-48ED-9E57-BD62205CED6C}.Release|x64.Build.0 = Release|x64
+		{AFF9C9FE-4571-48ED-9E57-BD62205CED6C}.Release|x86.ActiveCfg = Release|Win32
+		{AFF9C9FE-4571-48ED-9E57-BD62205CED6C}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5BC9EA07-767E-4CC2-BA05-4B658AC2E81E}
+	EndGlobalSection
+EndGlobal
