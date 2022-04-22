@@ -1,0 +1,26 @@
+Recoil finden
+-> Zuerst füge ich ReClass den ac_client.exe Prozess an
+-> Danach füge ich die statische Entity Player Object Adresse in ReClass hinzu
+-> Es werden alle Offsets aufgelistet, die mit dieser Adresse verbunden sind
+-> Der Offset für Aktuelle Waffenmunition liegt bei 0x374
+-> Zunächst ändere ich den Typ dieser Adresse auf Pointer, und füge 256 Bytes hinzu, damit die verbunde Adressbereiche aufgelistet werden
+-> Danach finde ich die aktuelle Waffe als String dargestellt, diese ändere ich wieder auf Pointer
+-> Ich füge dem Pointer 256 Bytes hinzu und ganz unten finde ich Adressen Werte die vielleicht etwas mit der Aktuellen Waffen zutun habe
+-> Dies prüfe ich indem, ich die Werte auf Int16 Typ wechsle und somit sehe geleiche Werte, die ich im Spiel beobachten kann
+-> Zunächst versuche ich herauszufinden, welche der Adressen dem Recoil entsprechen, indem ich die Werte einfach bearbeite und die Folgen im Spiel beobachte
+-> Zwei Recoil Adressen wurden gefunden. Eine bewegt die Spieler Sicht nach oben und andere nach links und rechts
+
+Recoil Funktion finden
+-> Da die zwei Adressen nicht ausreichen, um vollständig Recoil zu stoppen, versuche ich die Funktion im Dissasmbler zu finden
+-> Nun kopiere ich die Recoil Adresse und gehe zu IDA Anwendung
+-> Mit IDA öffne ich die exe Datei von diesem Spiel
+-> Danach öffne ich das Plugin Class Informer, welches mir die Namen der Strukturen auflistet
+-> Ich suche nach dem Namen "weapon" und wähle eine Waffe-Struktur aus
+-> Jetzt gehe durch alle Funktionen und schaue ob sie für mich interessant sein könnten
+-> Ziel ist es eine Funktion zu finden die den Recoil berechnet und aufruft
+-> (Man findet sie in dem man sich den Code ausliesst und herausfindet wo die zwei Offsets für die Recoil Adressen sich befinden)
+-> In der CallRecoil Funktion findet man die Adresse wo die Funktion maybeRecoil aufgerufen wird
+-> CE Memory View -> Suche 0046378E 
+-> Setze ein Breakpoint um diese Adresse zu debuggen und herauszufinden welche Adresse sie aufruft
+-> Nun gehe ich zu der Adresse und ändere die Assembler anweisung auf ret 8 (Mit RET wird ein mit dem CALL-Befehl aufgerufenes Unterprogramm beendet)
+-> So hat man in dem Spiel keinen Recoil
