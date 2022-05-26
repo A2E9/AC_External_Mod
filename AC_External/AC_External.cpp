@@ -382,3 +382,4 @@ int main()
 https://guidedhacking.com/threads/updated-assaultcube-addies-offsets-functions.6072/
 https://www.mpgh.net/forum/showthread.php?t=664311
 https://www.youtube.com/watch?v=3yVB-6nnzXI&ab_channel=RyneRun
+https://guidedhacking.com/threads/how-to-do-assaultcube-always-headshot.6149/
