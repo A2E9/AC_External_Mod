@@ -82,13 +82,14 @@ int main()
     HANDLE hProcess{};
     uintptr_t moduleBase{}, localPlayerPtr{}, healthAddr{}, xPos{}, zPos{}, yPos{}, superJump{};
  /*   speedFunc_t speed{};*/
-    bool bHealth{}, bAmmo{}, bRecoil{};
-    const int newValue{ 999 };
-     float newJump{  };
+    bool bHealth{}, bAmmo{}, bRecoil{}, bSpeed{}, bJump{};
+    int newValue{ 999 };
+    
+    float newJump{  };
 
-     float x{};
-     float y{};
-     float z{};
+    float x{};
+    float y{};
+    float z{};
 
     //Get ProcId of the target process
     DWORD procId{ GetProcId((L"ac_client.exe")) };
@@ -118,11 +119,17 @@ int main()
         return 0;
     }
 
-    auto red{ dye::on_light_red("SUB") };
+    auto red{ dye::on_light_red("DEF") };
+    auto green{ dye::on_light_green("ACT") };
+    auto NUM0{ dye::on_light_red("NUM0") };
     auto NUM1{ dye::on_light_red("NUM1") };
     auto NUM2{ dye::on_light_red("NUM2") };
     auto NUM3{ dye::on_light_red("NUM3") };
-    auto NUM0{ dye::on_light_red("NUM0") };
+    auto NUM4{ dye::on_light_red("NUM4") };
+    auto NUM5{ dye::on_light_red("NUM5") };
+    auto NUM6{ dye::on_light_red("NUM6") };
+    auto SPACE{ dye::on_light_green("SPAC") };
+
 
     std::cout << dye::light_blue("=================================================================\n");
     /*std::cout << "\t\t MOD MENU BY VALENTYN\n";
@@ -140,10 +147,17 @@ int main()
     ::_setmode(::_fileno(stdout), _O_TEXT);
 
     std::cout << dye::light_yellow("=================================================================\n");
-    std::cout << "[" << NUM1 << "] > > > Health\t\t >> " << red << " <<\n\n"; // /SUB/NOP
-    std::cout << "[" << NUM2 << "] > > > Ammo  \t\t >> " << red << " <<\n\n"; // ADD/SUB/NOP/999/1
-    std::cout << "[" << NUM3 << "] > > > Recoil\t\t >> " << red << " <<\n\n"; //NOP/RES
-    std::cout << "[" << NUM0 << "] > > > Exit\t\t\n";
+    std::cout << "\t [" << NUM1 << "] > > > Health\t\t\t >> " << red << " <<\n\n"; // /SUB/NOP
+    std::cout << "\t [" << NUM2 << "] > > > Ammo  \t\t\t >> " << red << " <<\n\n"; // ADD/SUB/NOP/999/1
+    std::cout << "\t [" << NUM3 << "] > > > Recoil\t\t\t >> " << red << " <<\n\n"; //NOP/RES
+    std::cout << "\t [" << NUM4 << "] > > > Speed\t\t\t >> " << red << " <<\n\n"; //NOP/RES
+   
+    std::cout << "\t [" << NUM5 << "] > > > Save Pos\t\t\t >> " << red << " <<\n\n"; //NOP/RES
+    std::cout << "\t [" << NUM6 << "] > > > Teleport\t\t\t >> " << red << " <<\n\n"; //NOP/RES
+    std::cout << "\t [" << SPACE << "] > > > SuperJump\t\t\t >> " << green << " <<\n\n"; //NOP/RES
+
+
+    std::cout << "\n\t\t\t[" << NUM0 << "] > > > Exit\t\t\n";
 
 
 
@@ -158,37 +172,41 @@ int main()
             switch (switchHealth)
             {
                 case 1: 
-                    gotoXY(36, 5);
+                    gotoXY(52, 9);
                     std::cout << dye::on_light_green("ADD") << "\n";
-                    gotoXY(1, 5);
+                    gotoXY(10, 9);
                     std::cout << dye::on_light_green("NUM1") << "\n";
 
                     mem::PatchEx((BYTE*)(moduleBase + 0x29D1F), (BYTE*)"\x01\x7B\x04", 3, hProcess); //add
                     switchHealth++;
                     break;
                 case 2:
-                    gotoXY(36, 5);
+                    gotoXY(52, 9);
                     std::cout << dye::on_purple("NOP") << "\n";
-                    gotoXY(1, 5);
+                    gotoXY(10, 9);
                     std::cout << dye::on_purple("NUM1") << "\n";
 
                     mem::NopEx((BYTE*)(moduleBase + 0x29D1F), 3, hProcess); //nop
                     switchHealth++;
                     break;
                 case 3:
-                    gotoXY(36, 5);
-                    std::cout << dye::on_light_red("SUB") << "\n";
-                    gotoXY(1, 5);
-                    std::cout << dye::on_light_red("NUM1") << "\n";
 
-                    mem::PatchEx((BYTE*)(moduleBase + 0x29D1F), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
+                    gotoXY(52, 9);
+                    std::cout << dye::on_light_aqua("999") << "\n";
+                    gotoXY(10, 9);
+                    std::cout << dye::on_light_aqua("NUM1") << "\n";
+                    newValue = 999;
+                    WriteProcessMemory(hProcess, (BYTE*)healthAddr, &newValue, sizeof(newValue), nullptr);
+
                     switchHealth++;
                     break;
                 case 4:
-                    gotoXY(36, 5);
-                    std::cout << dye::on_light_aqua("999") << "\n";
-                    gotoXY(1, 5);
-                    std::cout << dye::on_light_aqua("NUM1") << "\n";
+                    gotoXY(52, 9);
+                    std::cout << dye::on_light_red("DEF") << "\n";
+                    gotoXY(10, 9);
+                    std::cout << dye::on_light_red("NUM1") << "\n";
+                    newValue = 100;
+                    mem::PatchEx((BYTE*)(moduleBase + 0x29D1F), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
                     WriteProcessMemory(hProcess, (BYTE*)healthAddr, &newValue, sizeof(newValue), nullptr);
                     switchHealth = 1;
                     break;
@@ -203,11 +221,19 @@ int main()
 
             if (bAmmo)
             {
+                gotoXY(52, 11);
+                std::cout << dye::on_light_green("INC") << "\n";
+                gotoXY(10, 11);
+                std::cout << dye::on_light_green("NUM2") << "\n";
                 //ff 06 = inc[esi]
                 mem::PatchEx((BYTE*)(moduleBase + 0x637e9), (BYTE*)"\xFF\x06", 2, hProcess);
             }
             else
             {
+                gotoXY(52, 11);
+                std::cout << dye::on_light_red("DEF") << "\n";
+                gotoXY(10, 11);
+                std::cout << dye::on_light_red("NUM2") << "\n";
                 //ff 0E = dec[esi]
                 mem::PatchEx((BYTE*)(moduleBase + 0x637e9), (BYTE*)"\xFF\x0E", 2, hProcess);
             }
@@ -219,19 +245,47 @@ int main()
 
             if (bRecoil)
             {
+                gotoXY(52, 13);
+                std::cout << dye::on_light_green("NOP") << "\n";
+                gotoXY(10, 13);
+                std::cout << dye::on_light_green("NUM3") << "\n";
                 mem::NopEx((BYTE*)(moduleBase + 0x63786), 10, hProcess);
             } 
             else
             {
+                gotoXY(52, 13);
+                std::cout << dye::on_light_red("DEF") << "\n";
+                gotoXY(10, 13);
+                std::cout << dye::on_light_red("NUM3") << "\n";
                 //50 8D 4C 24 1C 51 8B CE FF D2; the original stack setup and call
                 mem::PatchEx((BYTE*)(moduleBase + 0x63786), (BYTE*)"\x50\x8d\x4c\x24\x1c\x51\x8b\xce\xff\xd2", 10, hProcess);
             }
 
         }
-        if (GetAsyncKeyState(VK_NUMPAD0) & 1)
+        if (GetAsyncKeyState(VK_NUMPAD4) & 1)
         {
-            return 0;
+            bSpeed = !bSpeed;
+
+            if (bSpeed)
+            {
+                gotoXY(52, 15);
+                std::cout << dye::on_light_green("ACT") << "\n";
+                gotoXY(10, 15);
+                std::cout << dye::on_light_green("NUM4") << "\n";
+                mem::PatchEx((BYTE*)(moduleBase + 0x5bea0 + 0x1), (BYTE*)"\x01", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000 
+            }
+            else
+            {
+                gotoXY(52, 15);
+                std::cout << dye::on_light_red("DEF") << "\n";
+                gotoXY(10, 15);
+                std::cout << dye::on_light_red("NUM4") << "\n";
+                mem::PatchEx((BYTE*)(moduleBase + 0x5bea0 + 0x1), (BYTE*)"\x01", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000
+            }
+
+                          
         }
+        
         if (!GetAsyncKeyState(VK_NUMPAD5) & 1)
         {
             /*gotoXY(17, 1);
@@ -262,28 +316,38 @@ int main()
 
         if (GetAsyncKeyState(VK_SPACE) & 1 )
         {
+            bJump = !bJump;
+            //if(bJump)
             newJump = 4.0f;
             WriteProcessMemory(hProcess, (FLOAT*)superJump, &newJump, sizeof(newJump), nullptr);
 
         }
 
-        if (GetAsyncKeyState(VK_DIVIDE) & 1)
+        if (GetAsyncKeyState(VK_NUMPAD5) & 1)
         {
+            gotoXY(52, 17);
+            std::cout << dye::on_light_green("SAV") << "\n";
+            gotoXY(10, 17);
+            std::cout << dye::on_light_green("NUM5") << "\n";
             ReadProcessMemory(hProcess, (BYTE*)xPos, &x, sizeof(x), nullptr);
             ReadProcessMemory(hProcess, (BYTE*)yPos, &y, sizeof(y), nullptr);
             ReadProcessMemory(hProcess, (BYTE*)zPos, &z, sizeof(z), nullptr);
         }
-        if (GetAsyncKeyState(VK_MULTIPLY) & 1 && x!=0 && y!=0) 
+        if (GetAsyncKeyState(VK_NUMPAD6) & 1 && x!=0 && y!=0) 
         {
+            gotoXY(52, 19);
+            std::cout << dye::on_light_green("TEL") << "\n";
+            gotoXY(10, 19);
+            std::cout << dye::on_light_green("NUM6") << "\n";
             WriteProcessMemory(hProcess, (BYTE*)xPos, &x, sizeof(x), nullptr);
             WriteProcessMemory(hProcess, (BYTE*)yPos, &y, sizeof(y), nullptr);
             WriteProcessMemory(hProcess, (BYTE*)zPos, &z, sizeof(z), nullptr);
         }
-        if (GetAsyncKeyState(VK_NUMPAD8) & 1)
+        
+        if (GetAsyncKeyState(VK_NUMPAD0) & 1)
         {
-            mem::PatchEx((BYTE*)(moduleBase + 0x5bea0 + 0x1), (BYTE*)"\x01", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000                
+            return 0;
         }
-
     }
 
     std::cout << "Process not found";
@@ -378,8 +442,8 @@ int main()
 //	}
 //	return;
 //}
-
-https://guidedhacking.com/threads/updated-assaultcube-addies-offsets-functions.6072/
-https://www.mpgh.net/forum/showthread.php?t=664311
-https://www.youtube.com/watch?v=3yVB-6nnzXI&ab_channel=RyneRun
-https://guidedhacking.com/threads/how-to-do-assaultcube-always-headshot.6149/
+//
+//https://guidedhacking.com/threads/updated-assaultcube-addies-offsets-functions.6072/
+//https://www.mpgh.net/forum/showthread.php?t=664311
+//https://www.youtube.com/watch?v=3yVB-6nnzXI&ab_channel=RyneRun
+//https://guidedhacking.com/threads/how-to-do-assaultcube-always-headshot.6149/
