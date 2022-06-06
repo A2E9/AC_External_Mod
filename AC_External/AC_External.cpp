@@ -1,4 +1,4 @@
-﻿// AC_External.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// AC_External.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 #include "stdafx.h"
 #include "proc.h"
@@ -44,12 +44,23 @@
 
 using speedFunc_t = void(*)();
 
+#define healthOffset 0xf8
+#define xOffset 0x38
+#define yOffset 0x34
+#define zOffset 0x3c
+#define superJumpOffset 0x18
+#define healthAddress 0x29D1F
+#define ammoAddress 0x637e9
+#define recoilAddress 0x63786
+#define zOffset 0x3c
+#define zOffset 0x3c
+#define speedVorne 0x5BEA0
+#define speedRechts 0x5BF60
+#define speedLinks 0x5BE40
+#define speedHinten 0x5BF00
+#define headShot 0x61767
+#define weaponTimeOffset 0x174 
 
-#define pGame 0x509B74 //GameBase
-#define ofFire 0x224
-#define ofKnifeTimer 0x160
-#define ofTargetName 0x501C38
-#define ofSuperJump 0x18
 
 void ShowConsoleCursor(bool showFlag)
 {
@@ -75,15 +86,16 @@ int main()
     HWND console{ GetConsoleWindow() };
     RECT r;
     GetWindowRect(console, &r); //stores the console's current dimensions
-    MoveWindow(console, r.left, r.top, 570, 600, TRUE); // 570 width, 600 height
+    MoveWindow(console, r.left, r.top, 558, 500, TRUE); // 570 width, 600 height
     ShowConsoleCursor(false);
 
 
     HANDLE hProcess{};
-    uintptr_t moduleBase{}, localPlayerPtr{}, healthAddr{}, xPos{}, zPos{}, yPos{}, superJump{};
+    uintptr_t moduleBase{}, localPlayerPtr{}, healthAddr{}, xPos{}, zPos{}, yPos{}, superJump{}, weaponTime{};
  /*   speedFunc_t speed{};*/
-    bool bHealth{}, bAmmo{}, bRecoil{}, bSpeed{}, bJump{};
+    bool bHealth{}, bAmmo{}, bRecoil{}, bSpeed{}, bJump{}, bHeadshot{};
     int newValue{ 999 };
+    int i{2};
     
     float newJump{  };
 
@@ -103,13 +115,13 @@ int main()
         //Resolve address
         localPlayerPtr = moduleBase + 0x10f4f4;
         //Resolve base address of the pointer chain
-        healthAddr = FindDMAAddy(hProcess, localPlayerPtr, { 0xf8 });
-        xPos = FindDMAAddy(hProcess, localPlayerPtr, { 0x38 });
-        yPos = FindDMAAddy(hProcess, localPlayerPtr, { 0x34 });
-        zPos = FindDMAAddy(hProcess, localPlayerPtr, { 0x3c });
-        superJump = FindDMAAddy(hProcess, localPlayerPtr, { 0x18 });
+        healthAddr = FindDMAAddy(hProcess, localPlayerPtr, { healthOffset });
+        xPos = FindDMAAddy(hProcess, localPlayerPtr, { xOffset });
+        yPos = FindDMAAddy(hProcess, localPlayerPtr, { yOffset });
+        zPos = FindDMAAddy(hProcess, localPlayerPtr, { zOffset });
+        superJump = FindDMAAddy(hProcess, localPlayerPtr, { superJumpOffset });
+        weaponTime = FindDMAAddy(hProcess, localPlayerPtr, { weaponTimeOffset });
          /*speed = (speedFunc_t)(moduleBase + 0x25770);*/
-        
     }
 
     else
@@ -128,6 +140,7 @@ int main()
     auto NUM4{ dye::on_light_red("NUM4") };
     auto NUM5{ dye::on_light_red("NUM5") };
     auto NUM6{ dye::on_light_red("NUM6") };
+    auto NUM7{ dye::on_light_red("NUM7") };
     auto SPACE{ dye::on_light_green("SPAC") };
 
 
@@ -154,6 +167,7 @@ int main()
    
     std::cout << "\t [" << NUM5 << "] > > > Save Pos\t\t\t >> " << red << " <<\n\n"; //NOP/RES
     std::cout << "\t [" << NUM6 << "] > > > Teleport\t\t\t >> " << red << " <<\n\n"; //NOP/RES
+    std::cout << "\t [" << NUM7 << "] > > > HeadShot\t\t\t >> " << red << " <<\n\n"; //NOP/RES
     std::cout << "\t [" << SPACE << "] > > > SuperJump\t\t\t >> " << green << " <<\n\n"; //NOP/RES
 
 
@@ -162,10 +176,12 @@ int main()
 
 
 
+
     DWORD dwExit{};
     auto switchHealth{ 1 };
     while (GetExitCodeProcess(hProcess, &dwExit) && dwExit == STILL_ACTIVE)
     {
+
         //Health bug affects all players
         if (GetAsyncKeyState(VK_NUMPAD1) & 1)
         {
@@ -177,7 +193,7 @@ int main()
                     gotoXY(10, 9);
                     std::cout << dye::on_light_green("NUM1") << "\n";
 
-                    mem::PatchEx((BYTE*)(moduleBase + 0x29D1F), (BYTE*)"\x01\x7B\x04", 3, hProcess); //add
+                    mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x01\x7B\x04", 3, hProcess); //add
                     switchHealth++;
                     break;
                 case 2:
@@ -186,17 +202,17 @@ int main()
                     gotoXY(10, 9);
                     std::cout << dye::on_purple("NUM1") << "\n";
 
-                    mem::NopEx((BYTE*)(moduleBase + 0x29D1F), 3, hProcess); //nop
+                    mem::NopEx((BYTE*)(moduleBase + healthAddress), 3, hProcess); //nop
                     switchHealth++;
                     break;
                 case 3:
-
                     gotoXY(52, 9);
                     std::cout << dye::on_light_aqua("999") << "\n";
                     gotoXY(10, 9);
                     std::cout << dye::on_light_aqua("NUM1") << "\n";
                     newValue = 999;
                     WriteProcessMemory(hProcess, (BYTE*)healthAddr, &newValue, sizeof(newValue), nullptr);
+                    mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
 
                     switchHealth++;
                     break;
@@ -206,7 +222,7 @@ int main()
                     gotoXY(10, 9);
                     std::cout << dye::on_light_red("NUM1") << "\n";
                     newValue = 100;
-                    mem::PatchEx((BYTE*)(moduleBase + 0x29D1F), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
+                    mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
                     WriteProcessMemory(hProcess, (BYTE*)healthAddr, &newValue, sizeof(newValue), nullptr);
                     switchHealth = 1;
                     break;
@@ -214,6 +230,7 @@ int main()
                     return 0;
             }
         }
+
         //unlimited ammo patch
         if (GetAsyncKeyState(VK_NUMPAD2) & 1)
         {
@@ -226,7 +243,7 @@ int main()
                 gotoXY(10, 11);
                 std::cout << dye::on_light_green("NUM2") << "\n";
                 //ff 06 = inc[esi]
-                mem::PatchEx((BYTE*)(moduleBase + 0x637e9), (BYTE*)"\xFF\x06", 2, hProcess);
+                mem::PatchEx((BYTE*)(moduleBase + ammoAddress), (BYTE*)"\xFF\x06", 2, hProcess);
             }
             else
             {
@@ -235,7 +252,7 @@ int main()
                 gotoXY(10, 11);
                 std::cout << dye::on_light_red("NUM2") << "\n";
                 //ff 0E = dec[esi]
-                mem::PatchEx((BYTE*)(moduleBase + 0x637e9), (BYTE*)"\xFF\x0E", 2, hProcess);
+                mem::PatchEx((BYTE*)(moduleBase + ammoAddress), (BYTE*)"\xFF\x0E", 2, hProcess);
             }
         }
         //no recoil NOP
@@ -246,10 +263,10 @@ int main()
             if (bRecoil)
             {
                 gotoXY(52, 13);
-                std::cout << dye::on_light_green("NOP") << "\n";
+                std::cout << dye::on_purple("NOP") << "\n";
                 gotoXY(10, 13);
-                std::cout << dye::on_light_green("NUM3") << "\n";
-                mem::NopEx((BYTE*)(moduleBase + 0x63786), 10, hProcess);
+                std::cout << dye::on_purple("NUM3") << "\n";
+                mem::NopEx((BYTE*)(moduleBase + recoilAddress), 10, hProcess);
             } 
             else
             {
@@ -258,7 +275,7 @@ int main()
                 gotoXY(10, 13);
                 std::cout << dye::on_light_red("NUM3") << "\n";
                 //50 8D 4C 24 1C 51 8B CE FF D2; the original stack setup and call
-                mem::PatchEx((BYTE*)(moduleBase + 0x63786), (BYTE*)"\x50\x8d\x4c\x24\x1c\x51\x8b\xce\xff\xd2", 10, hProcess);
+                mem::PatchEx((BYTE*)(moduleBase + recoilAddress), (BYTE*)"\x50\x8d\x4c\x24\x1c\x51\x8b\xce\xff\xd2", 10, hProcess);
             }
 
         }
@@ -272,7 +289,10 @@ int main()
                 std::cout << dye::on_light_green("ACT") << "\n";
                 gotoXY(10, 15);
                 std::cout << dye::on_light_green("NUM4") << "\n";
-                mem::PatchEx((BYTE*)(moduleBase + 0x5bea0 + 0x1), (BYTE*)"\x01", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000 
+                mem::PatchEx((BYTE*)(moduleBase + speedVorne +0x1), (BYTE*)"\x03", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000 
+                mem::PatchEx((BYTE*)(moduleBase + speedRechts + 0x1), (BYTE*)"\xFD", 1, hProcess);
+                mem::PatchEx((BYTE*)(moduleBase + speedLinks + 0x1), (BYTE*)"\xFD", 1, hProcess);
+                mem::PatchEx((BYTE*)(moduleBase + speedHinten + 0x1), (BYTE*)"\x03", 1, hProcess);
             }
             else
             {
@@ -280,39 +300,42 @@ int main()
                 std::cout << dye::on_light_red("DEF") << "\n";
                 gotoXY(10, 15);
                 std::cout << dye::on_light_red("NUM4") << "\n";
-                mem::PatchEx((BYTE*)(moduleBase + 0x5bea0 + 0x1), (BYTE*)"\x01", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000
-            }
-
-                          
+                mem::PatchEx((BYTE*)(moduleBase + speedVorne + 0x1), (BYTE*)"\x01", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000 
+                mem::PatchEx((BYTE*)(moduleBase + speedRechts + 0x1), (BYTE*)"\xFF", 1, hProcess);
+                mem::PatchEx((BYTE*)(moduleBase + speedLinks + 0x1), (BYTE*)"\xFF", 1, hProcess);
+                mem::PatchEx((BYTE*)(moduleBase + speedHinten + 0x1), (BYTE*)"\x01", 1, hProcess);
+            }   
         }
         
-        if (!GetAsyncKeyState(VK_NUMPAD5) & 1)
-        {
-            /*gotoXY(17, 1);
-            std::cout << dye::on_light_purple("MOD MENU BY VALENTYN");
-            gotoXY(20, 2);
-            std::cout << dye::on_light_green("Assault Cube");
-            gotoXY(25,3);
-            std::cout << dye::on_light_red("GG");
-            Sleep(100);
+        //if (!GetAsyncKeyState(VK_NUMPAD5) & 1)
+        //{
+        //    /*gotoXY(17, 1);
+        //    std::cout << dye::on_light_purple("MOD MENU BY VALENTYN");
+        //    gotoXY(20, 2);
+        //    std::cout << dye::on_light_green("Assault Cube");
+        //    gotoXY(25,3);
+        //    std::cout << dye::on_light_red("GG");
+        //    Sleep(100);
 
-            gotoXY(17, 1);
-            std::cout << dye::on_light_green("MOD MENU BY VALENTYN");
-            gotoXY(20, 2);
-            std::cout << dye::on_light_red("Assault Cube");
-            gotoXY(25, 3);
-            std::cout << dye::on_light_purple("GG");
-            Sleep(100);
+        //    gotoXY(17, 1);
+        //    std::cout << dye::on_light_green("MOD MENU BY VALENTYN");
+        //    gotoXY(20, 2);
+        //    std::cout << dye::on_light_red("Assault Cube");
+        //    gotoXY(25, 3);
+        //    std::cout << dye::on_light_purple("GG");
+        //    Sleep(100);
 
-            gotoXY(17, 1);
-            std::cout << dye::on_light_red("MOD MENU BY VALENTYN");
-            gotoXY(20, 2);
-            std::cout << dye::on_light_purple("Assault Cube");
-            gotoXY(25, 3);
-            std::cout << dye::on_light_green("GG");
-            Sleep(100);*/
-        }
+        //    gotoXY(17, 1);
+        //    std::cout << dye::on_light_red("MOD MENU BY VALENTYN");
+        //    gotoXY(20, 2);
+        //    std::cout << dye::on_light_purple("Assault Cube");
+        //    gotoXY(25, 3);
+        //    std::cout << dye::on_light_green("GG");
+        //    Sleep(100);*/
+        //}
         //Sleep(100); 
+
+        
 
         if (GetAsyncKeyState(VK_SPACE) & 1 )
         {
@@ -333,7 +356,7 @@ int main()
             ReadProcessMemory(hProcess, (BYTE*)yPos, &y, sizeof(y), nullptr);
             ReadProcessMemory(hProcess, (BYTE*)zPos, &z, sizeof(z), nullptr);
         }
-        if (GetAsyncKeyState(VK_NUMPAD6) & 1 && x!=0 && y!=0) 
+        if (GetAsyncKeyState(VK_NUMPAD6) & 1  ) //&& y!=0   && x!=0
         {
             gotoXY(52, 19);
             std::cout << dye::on_light_green("TEL") << "\n";
@@ -342,11 +365,54 @@ int main()
             WriteProcessMemory(hProcess, (BYTE*)xPos, &x, sizeof(x), nullptr);
             WriteProcessMemory(hProcess, (BYTE*)yPos, &y, sizeof(y), nullptr);
             WriteProcessMemory(hProcess, (BYTE*)zPos, &z, sizeof(z), nullptr);
+            Sleep(200);
+            gotoXY(52, 19);
+            std::cout << dye::on_light_red("TEL") << "\n";
+            gotoXY(10, 19);
+            std::cout << dye::on_light_red("NUM6") << "\n";
+
+        }
+        if (GetAsyncKeyState(VK_NUMPAD7) & 1) 
+        {
+            gotoXY(52, 21);
+            std::cout << dye::on_light_green("ONE") << "\n";
+            gotoXY(10, 21);
+            std::cout << dye::on_light_green("NUM7") << "\n";
+
+            bHeadshot = !bHeadshot;
+
+            if(bHeadshot) mem::NopEx((BYTE*)(moduleBase + headShot), 2, hProcess);
+
+            else { 
+                mem::PatchEx((BYTE*)(moduleBase + headShot), (BYTE*)"\x75\x09", 2, hProcess);
+                gotoXY(52, 21);
+                std::cout << dye::on_light_red("DEF") << "\n";
+                gotoXY(10, 21);
+                std::cout << dye::on_light_red("NUM7") << "\n";
+
+            } //jne 00461772   75 09
         }
         
         if (GetAsyncKeyState(VK_NUMPAD0) & 1)
         {
+            newValue = 100;
+            mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
+            WriteProcessMemory(hProcess, (BYTE*)healthAddr, &newValue, sizeof(newValue), nullptr);
+
+            mem::PatchEx((BYTE*)(moduleBase + ammoAddress), (BYTE*)"\xFF\x0E", 2, hProcess);
+
+            mem::PatchEx((BYTE*)(moduleBase + recoilAddress), (BYTE*)"\x50\x8d\x4c\x24\x1c\x51\x8b\xce\xff\xd2", 10, hProcess);
+
+            mem::PatchEx((BYTE*)(moduleBase + speedVorne + 0x1), (BYTE*)"\x01", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000 
+            mem::PatchEx((BYTE*)(moduleBase + speedRechts + 0x1), (BYTE*)"\xFF", 1, hProcess);
+            mem::PatchEx((BYTE*)(moduleBase + speedLinks + 0x1), (BYTE*)"\xFF", 1, hProcess);
+            mem::PatchEx((BYTE*)(moduleBase + speedHinten + 0x1), (BYTE*)"\x01", 1, hProcess);
+
+            mem::PatchEx((BYTE*)(moduleBase + headShot), (BYTE*)"\x75\x09", 2, hProcess);
             return 0;
+        }
+        if (GetAsyncKeyState(VK_NUMPAD8) & 1) {
+            WriteProcessMemory(hProcess, (FLOAT*)weaponTime, &i, sizeof(i), nullptr);
         }
     }
 
