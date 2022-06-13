@@ -36,13 +36,7 @@
 //Player Pos Y : 0x34
 //Player Pos Z : 0x3C
 
-
-//- Renngeschwindigkeit ändern
-//- Sprunghöhe ändern
-
-//- Ein Schuss Kill
-
-using speedFunc_t = void(*)();
+using speedFunc_t = void(*)();//Internal Hooking
 
 #define healthOffset 0xf8
 #define xOffset 0x38
@@ -60,6 +54,7 @@ using speedFunc_t = void(*)();
 #define speedHinten 0x5BF00
 #define headShot 0x61767
 #define weaponTimeOffset 0x174 
+#define fragsOffset 0x1FC
 
 
 void ShowConsoleCursor(bool showFlag)
@@ -75,30 +70,28 @@ void ShowConsoleCursor(bool showFlag)
 
 void gotoXY(int x, int y)
 {
-	COORD coord = { x, y };
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-	return;
+    COORD coord = { x, y };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    return;
 }
-
 
 int main()
 {
     HWND console{ GetConsoleWindow() };
     RECT r;
     GetWindowRect(console, &r); //stores the console's current dimensions
-    MoveWindow(console, r.left, r.top, 558, 500, TRUE); // 570 width, 600 height
+    MoveWindow(console, r.left, r.top, 558, 558, TRUE); // 570 width, 600 height
     ShowConsoleCursor(false);
 
 
     HANDLE hProcess{};
-    uintptr_t moduleBase{}, localPlayerPtr{}, healthAddr{}, xPos{}, zPos{}, yPos{}, superJump{}, weaponTime{};
- /*   speedFunc_t speed{};*/
-    bool bHealth{}, bAmmo{}, bRecoil{}, bSpeed{}, bJump{}, bHeadshot{};
+    uintptr_t moduleBase{}, localPlayerPtr{}, healthAddr{}, xPos{}, zPos{}, yPos{}, superJump{}, weaponTime{}, frags{};
+    /*   speedFunc_t speed{};*/
+    bool bHealth{}, bAmmo{}, bRecoil{}, bSpeed{}, bJump{}, bHeadshot{}, bFrags{}, bWeaponTime{};
     int newValue{ 999 };
-    int i{2};
-    
-    float newJump{  };
+    int i{ 2 };
 
+    float newJump{  };
     float x{};
     float y{};
     float z{};
@@ -121,9 +114,9 @@ int main()
         zPos = FindDMAAddy(hProcess, localPlayerPtr, { zOffset });
         superJump = FindDMAAddy(hProcess, localPlayerPtr, { superJumpOffset });
         weaponTime = FindDMAAddy(hProcess, localPlayerPtr, { weaponTimeOffset });
-         /*speed = (speedFunc_t)(moduleBase + 0x25770);*/
+        /*speed = (speedFunc_t)(moduleBase + 0x25770);*/
+        frags = FindDMAAddy(hProcess, localPlayerPtr, { fragsOffset });
     }
-
     else
     {
         std::cout << "Process not found";
@@ -141,6 +134,8 @@ int main()
     auto NUM5{ dye::on_light_red("NUM5") };
     auto NUM6{ dye::on_light_red("NUM6") };
     auto NUM7{ dye::on_light_red("NUM7") };
+    auto NUM8{ dye::on_light_red("NUM8") };
+    auto NUM9{ dye::on_light_red("NUM9") };
     auto SPACE{ dye::on_light_green("SPAC") };
 
 
@@ -160,78 +155,72 @@ int main()
     ::_setmode(::_fileno(stdout), _O_TEXT);
 
     std::cout << dye::light_yellow("=================================================================\n");
-    std::cout << "\t [" << NUM1 << "] > > > Health\t\t\t >> " << red << " <<\n\n"; // /SUB/NOP
-    std::cout << "\t [" << NUM2 << "] > > > Ammo  \t\t\t >> " << red << " <<\n\n"; // ADD/SUB/NOP/999/1
-    std::cout << "\t [" << NUM3 << "] > > > Recoil\t\t\t >> " << red << " <<\n\n"; //NOP/RES
-    std::cout << "\t [" << NUM4 << "] > > > Speed\t\t\t >> " << red << " <<\n\n"; //NOP/RES
-   
-    std::cout << "\t [" << NUM5 << "] > > > Save Pos\t\t\t >> " << red << " <<\n\n"; //NOP/RES
-    std::cout << "\t [" << NUM6 << "] > > > Teleport\t\t\t >> " << red << " <<\n\n"; //NOP/RES
-    std::cout << "\t [" << NUM7 << "] > > > HeadShot\t\t\t >> " << red << " <<\n\n"; //NOP/RES
-    std::cout << "\t [" << SPACE << "] > > > SuperJump\t\t\t >> " << green << " <<\n\n"; //NOP/RES
-
+    std::cout << "\t [" << NUM1 << "] > > > Health\t\t\t >> " << red << " <<\n\n";
+    std::cout << "\t [" << NUM2 << "] > > > Ammo  \t\t\t >> " << red << " <<\n\n"; 
+    std::cout << "\t [" << NUM3 << "] > > > Recoil\t\t\t >> " << red << " <<\n\n"; 
+    std::cout << "\t [" << NUM4 << "] > > > Speed\t\t\t >> " << red << " <<\n\n"; 
+    std::cout << "\t [" << NUM5 << "] > > > Save Pos\t\t\t >> " << red << " <<\n\n"; 
+    std::cout << "\t [" << NUM6 << "] > > > Teleport\t\t\t >> " << red << " <<\n\n";
+    std::cout << "\t [" << NUM7 << "] > > > HeadShot\t\t\t >> " << red << " <<\n\n"; 
+    std::cout << "\t [" << NUM8 << "] > > > FastShot\t\t\t >> " << red << " <<\n\n";
+    std::cout << "\t [" << NUM9 << "] > > > Kills \t\t\t >> " << red << " <<\n\n"; 
+    std::cout << "\t [" << SPACE << "] > > > SuperJump\t\t\t >> " << green << " <<\n\n"; 
 
     std::cout << "\n\t\t\t[" << NUM0 << "] > > > Exit\t\t\n";
-
-
-
-
 
     DWORD dwExit{};
     auto switchHealth{ 1 };
     while (GetExitCodeProcess(hProcess, &dwExit) && dwExit == STILL_ACTIVE)
     {
-
-        //Health bug affects all players
+        //Health-Cheat
         if (GetAsyncKeyState(VK_NUMPAD1) & 1)
         {
             switch (switchHealth)
             {
-                case 1: 
-                    gotoXY(52, 9);
-                    std::cout << dye::on_light_green("ADD") << "\n";
-                    gotoXY(10, 9);
-                    std::cout << dye::on_light_green("NUM1") << "\n";
+            case 1:
+                gotoXY(52, 9);
+                std::cout << dye::on_light_green("ADD") << "\n";
+                gotoXY(10, 9);
+                std::cout << dye::on_light_green("NUM1") << "\n";
 
-                    mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x01\x7B\x04", 3, hProcess); //add
-                    switchHealth++;
-                    break;
-                case 2:
-                    gotoXY(52, 9);
-                    std::cout << dye::on_purple("NOP") << "\n";
-                    gotoXY(10, 9);
-                    std::cout << dye::on_purple("NUM1") << "\n";
+                mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x01\x7B\x04", 3, hProcess); //add
+                switchHealth++;
+                break;
+            case 2:
+                gotoXY(52, 9);
+                std::cout << dye::on_purple("NOP") << "\n";
+                gotoXY(10, 9);
+                std::cout << dye::on_purple("NUM1") << "\n";
 
-                    mem::NopEx((BYTE*)(moduleBase + healthAddress), 3, hProcess); //nop
-                    switchHealth++;
-                    break;
-                case 3:
-                    gotoXY(52, 9);
-                    std::cout << dye::on_light_aqua("999") << "\n";
-                    gotoXY(10, 9);
-                    std::cout << dye::on_light_aqua("NUM1") << "\n";
-                    newValue = 999;
-                    WriteProcessMemory(hProcess, (BYTE*)healthAddr, &newValue, sizeof(newValue), nullptr);
-                    mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
+                mem::NopEx((BYTE*)(moduleBase + healthAddress), 3, hProcess); //nop
+                switchHealth++;
+                break;
+            case 3:
+                gotoXY(52, 9);
+                std::cout << dye::on_light_aqua("999") << "\n";
+                gotoXY(10, 9);
+                std::cout << dye::on_light_aqua("NUM1") << "\n";
+                newValue = 999;
+                WriteProcessMemory(hProcess, (BYTE*)healthAddr, &newValue, sizeof(newValue), nullptr);
+                mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
 
-                    switchHealth++;
-                    break;
-                case 4:
-                    gotoXY(52, 9);
-                    std::cout << dye::on_light_red("DEF") << "\n";
-                    gotoXY(10, 9);
-                    std::cout << dye::on_light_red("NUM1") << "\n";
-                    newValue = 100;
-                    mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
-                    WriteProcessMemory(hProcess, (BYTE*)healthAddr, &newValue, sizeof(newValue), nullptr);
-                    switchHealth = 1;
-                    break;
-                default: 
-                    return 0;
+                switchHealth++;
+                break;
+            case 4:
+                gotoXY(52, 9);
+                std::cout << dye::on_light_red("DEF") << "\n";
+                gotoXY(10, 9);
+                std::cout << dye::on_light_red("NUM1") << "\n";
+                newValue = 100;
+                mem::PatchEx((BYTE*)(moduleBase + healthAddress), (BYTE*)"\x29\x7B\x04", 3, hProcess); //sub
+                WriteProcessMemory(hProcess, (BYTE*)healthAddr, &newValue, sizeof(newValue), nullptr);
+                switchHealth = 1;
+                break;
+            default:
+                return 0;
             }
         }
-
-        //unlimited ammo patch
+        //Ammo patch
         if (GetAsyncKeyState(VK_NUMPAD2) & 1)
         {
             bAmmo = !bAmmo;
@@ -255,7 +244,7 @@ int main()
                 mem::PatchEx((BYTE*)(moduleBase + ammoAddress), (BYTE*)"\xFF\x0E", 2, hProcess);
             }
         }
-        //no recoil NOP
+        //NoRecoil
         if (GetAsyncKeyState(VK_NUMPAD3) & 1) // Recoil
         {
             bRecoil = !bRecoil;
@@ -267,7 +256,7 @@ int main()
                 gotoXY(10, 13);
                 std::cout << dye::on_purple("NUM3") << "\n";
                 mem::NopEx((BYTE*)(moduleBase + recoilAddress), 10, hProcess);
-            } 
+            }
             else
             {
                 gotoXY(52, 13);
@@ -279,6 +268,7 @@ int main()
             }
 
         }
+        //SpeedHack
         if (GetAsyncKeyState(VK_NUMPAD4) & 1)
         {
             bSpeed = !bSpeed;
@@ -289,7 +279,7 @@ int main()
                 std::cout << dye::on_light_green("ACT") << "\n";
                 gotoXY(10, 15);
                 std::cout << dye::on_light_green("NUM4") << "\n";
-                mem::PatchEx((BYTE*)(moduleBase + speedVorne +0x1), (BYTE*)"\x03", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000 
+                mem::PatchEx((BYTE*)(moduleBase + speedVorne + 0x1), (BYTE*)"\x03", 1, hProcess); //rechts 0045BF60  B8 FF FF FF FF //backwards 5BE40  B8 FFFFFFFF //left 5BF00 - B8 01000000 
                 mem::PatchEx((BYTE*)(moduleBase + speedRechts + 0x1), (BYTE*)"\xFD", 1, hProcess);
                 mem::PatchEx((BYTE*)(moduleBase + speedLinks + 0x1), (BYTE*)"\xFD", 1, hProcess);
                 mem::PatchEx((BYTE*)(moduleBase + speedHinten + 0x1), (BYTE*)"\x03", 1, hProcess);
@@ -304,48 +294,9 @@ int main()
                 mem::PatchEx((BYTE*)(moduleBase + speedRechts + 0x1), (BYTE*)"\xFF", 1, hProcess);
                 mem::PatchEx((BYTE*)(moduleBase + speedLinks + 0x1), (BYTE*)"\xFF", 1, hProcess);
                 mem::PatchEx((BYTE*)(moduleBase + speedHinten + 0x1), (BYTE*)"\x01", 1, hProcess);
-            }   
+            }
         }
-        
-        //if (!GetAsyncKeyState(VK_NUMPAD5) & 1)
-        //{
-        //    /*gotoXY(17, 1);
-        //    std::cout << dye::on_light_purple("MOD MENU BY VALENTYN");
-        //    gotoXY(20, 2);
-        //    std::cout << dye::on_light_green("Assault Cube");
-        //    gotoXY(25,3);
-        //    std::cout << dye::on_light_red("GG");
-        //    Sleep(100);
-
-        //    gotoXY(17, 1);
-        //    std::cout << dye::on_light_green("MOD MENU BY VALENTYN");
-        //    gotoXY(20, 2);
-        //    std::cout << dye::on_light_red("Assault Cube");
-        //    gotoXY(25, 3);
-        //    std::cout << dye::on_light_purple("GG");
-        //    Sleep(100);
-
-        //    gotoXY(17, 1);
-        //    std::cout << dye::on_light_red("MOD MENU BY VALENTYN");
-        //    gotoXY(20, 2);
-        //    std::cout << dye::on_light_purple("Assault Cube");
-        //    gotoXY(25, 3);
-        //    std::cout << dye::on_light_green("GG");
-        //    Sleep(100);*/
-        //}
-        //Sleep(100); 
-
-        
-
-        if (GetAsyncKeyState(VK_SPACE) & 1 )
-        {
-            bJump = !bJump;
-            //if(bJump)
-            newJump = 4.0f;
-            WriteProcessMemory(hProcess, (FLOAT*)superJump, &newJump, sizeof(newJump), nullptr);
-
-        }
-
+        //Save Position
         if (GetAsyncKeyState(VK_NUMPAD5) & 1)
         {
             gotoXY(52, 17);
@@ -356,7 +307,8 @@ int main()
             ReadProcessMemory(hProcess, (BYTE*)yPos, &y, sizeof(y), nullptr);
             ReadProcessMemory(hProcess, (BYTE*)zPos, &z, sizeof(z), nullptr);
         }
-        if (GetAsyncKeyState(VK_NUMPAD6) & 1  ) //&& y!=0   && x!=0
+        //Teleport to Position
+        if (GetAsyncKeyState(VK_NUMPAD6) & 1 && y != 0 && x != 0) //&& y!=0   && x!=0
         {
             gotoXY(52, 19);
             std::cout << dye::on_light_green("TEL") << "\n";
@@ -372,7 +324,8 @@ int main()
             std::cout << dye::on_light_red("NUM6") << "\n";
 
         }
-        if (GetAsyncKeyState(VK_NUMPAD7) & 1) 
+        //One Kill
+        if (GetAsyncKeyState(VK_NUMPAD7) & 1)
         {
             gotoXY(52, 21);
             std::cout << dye::on_light_green("ONE") << "\n";
@@ -381,9 +334,9 @@ int main()
 
             bHeadshot = !bHeadshot;
 
-            if(bHeadshot) mem::NopEx((BYTE*)(moduleBase + headShot), 2, hProcess);
+            if (bHeadshot) mem::NopEx((BYTE*)(moduleBase + headShot), 2, hProcess);
 
-            else { 
+            else {
                 mem::PatchEx((BYTE*)(moduleBase + headShot), (BYTE*)"\x75\x09", 2, hProcess);
                 gotoXY(52, 21);
                 std::cout << dye::on_light_red("DEF") << "\n";
@@ -392,7 +345,56 @@ int main()
 
             } //jne 00461772   75 09
         }
-        
+        //WeaponTime
+        if (GetAsyncKeyState(VK_NUMPAD8) & 1) 
+        {
+            gotoXY(52, 23);
+            std::cout << dye::on_light_green("ACT") << "\n";
+            gotoXY(10, 23);
+            std::cout << dye::on_light_green("NUM8") << "\n";
+
+            bWeaponTime = !bWeaponTime;
+
+            if (!bWeaponTime)
+            {
+                gotoXY(52, 23);
+                std::cout << dye::on_light_red("DEF") << "\n";
+                gotoXY(10, 23);
+                std::cout << dye::on_light_red("NUM8") << "\n";
+
+            }
+        }
+        //Frags
+        if (GetAsyncKeyState(VK_NUMPAD9) & 1)
+        {
+            bFrags = !bFrags;
+            if (bFrags) {
+                gotoXY(52, 25);
+                std::cout << dye::on_light_aqua("999") << "\n";
+                gotoXY(10, 25);
+                std::cout << dye::on_light_aqua("NUM8") << "\n";
+
+                WriteProcessMemory(hProcess, (FLOAT*)frags, &newValue, sizeof(newValue), nullptr);
+            }
+            else {
+                gotoXY(52, 25);
+                std::cout << dye::on_light_red("DEF") << "\n";
+                gotoXY(10, 25);
+                std::cout << dye::on_light_red("NUM9") << "\n";
+
+                WriteProcessMemory(hProcess, (FLOAT*)frags, &i, sizeof(i), nullptr);
+            }
+        }
+        //JumpHack
+        if (GetAsyncKeyState(VK_SPACE) & 1)
+        {
+            bJump = !bJump;
+            //if(bJump)
+            newJump = 4.0f;
+            WriteProcessMemory(hProcess, (FLOAT*)superJump, &newJump, sizeof(newJump), nullptr);
+
+        }
+        //Exit
         if (GetAsyncKeyState(VK_NUMPAD0) & 1)
         {
             newValue = 100;
@@ -409,18 +411,42 @@ int main()
             mem::PatchEx((BYTE*)(moduleBase + speedHinten + 0x1), (BYTE*)"\x01", 1, hProcess);
 
             mem::PatchEx((BYTE*)(moduleBase + headShot), (BYTE*)"\x75\x09", 2, hProcess);
+
+            WriteProcessMemory(hProcess, (FLOAT*)frags, &i, sizeof(i), nullptr);
             return 0;
         }
-        if (GetAsyncKeyState(VK_NUMPAD8) & 1) {
-            WriteProcessMemory(hProcess, (FLOAT*)weaponTime, &i, sizeof(i), nullptr);
-        }
+        //Loop WeaponTime
+        if(bWeaponTime)WriteProcessMemory(hProcess, (FLOAT*)weaponTime, &i, sizeof(i), nullptr);
+        //if (!GetAsyncKeyState(VK_NUMPAD5) & 1)
+//{
+//    /*gotoXY(17, 1);
+//    std::cout << dye::on_light_purple("MOD MENU BY VALENTYN");
+//    gotoXY(20, 2);
+//    std::cout << dye::on_light_green("Assault Cube");
+//    gotoXY(25,3);
+//    std::cout << dye::on_light_red("GG");
+//    Sleep(100);
+//    gotoXY(17, 1);
+//    std::cout << dye::on_light_green("MOD MENU BY VALENTYN");
+//    gotoXY(20, 2);
+//    std::cout << dye::on_light_red("Assault Cube");
+//    gotoXY(25, 3);
+//    std::cout << dye::on_light_purple("GG");
+//    Sleep(100);
+//    gotoXY(17, 1);
+//    std::cout << dye::on_light_red("MOD MENU BY VALENTYN");
+//    gotoXY(20, 2);
+//    std::cout << dye::on_light_purple("Assault Cube");
+//    gotoXY(25, 3);
+//    std::cout << dye::on_light_green("GG");
+//    Sleep(100);*/
+//}
+//Sleep(100); 
     }
-
     std::cout << "Process not found";
     getchar();
     return 0;
 }
-
 
 /*
 int main()
@@ -455,7 +481,6 @@ int main()
 }
 */
 
-
 /*::_setmode(::_fileno(stdout), _O_U16TEXT);
 ::std::wcout <<
     L" __       __  ______  _______       __       __ ________ __    __ __    __\n"
@@ -469,7 +494,6 @@ int main()
     L" \\▓▓      \\▓▓ \\▓▓▓▓▓▓ \\▓▓▓▓▓▓▓      \\▓▓      \\▓▓\\▓▓▓▓▓▓▓▓\\▓▓   \\▓▓ \\▓▓▓▓▓▓\n";
 ::_setmode(::_fileno(stdout), _O_TEXT);*/
 
-
 //L"\u001b[35m▀████▄     ▄███▀ ▄▄█▀▀██▄ ▀███▀▀▀██▄     ▀████▄     ▄███▀███▀▀▀███▀███▄   ▀███▀███▀   ▀███▀\u001b[0m\n"
 //L"\u001b[31m  ████    ████ ▄██▀    ▀██▄ ██    ▀██▄     ████    ████   ██    ▀█  ███▄    █  ██       █\u001b[0m\n"
 //L"\u001b[31m  █ ██   ▄█ ██ ██▀      ▀██ ██     ▀██     █ ██   ▄█ ██   ██   █    █ ███   █  ██       █\u001b[0m\n"
@@ -477,7 +501,6 @@ int main()
 //L"\u001b[31m  █  ██▄█▀  ██ ██▄      ▄██ ██     ▄██     █  ██▄█▀  ██   ██   █  ▄ █   ▀██▄█  ██       █\u001b[0m\n"
 //L"\u001b[31m  █  ▀██▀   ██ ▀██▄    ▄██▀ ██    ▄██▀     █  ▀██▀   ██   ██     ▄█ █     ███  ██▄     ▄█\u001b[0m\n"
 //L"\u001b[31m▄███▄ ▀▀  ▄████▄ ▀▀████▀▀ ▄████████▀     ▄███▄ ▀▀  ▄████▄█████████████▄    ██   ▀██████▀▀\u001b[0m\n";
-
 
 //struct DoubleVector : private std::vector<double>
 //{
@@ -491,8 +514,6 @@ int main()
 //        os << e << "  ";
 //    return os;
 //}
-
-
 
 //void ClearConsole()
 //{
